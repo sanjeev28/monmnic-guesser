@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mnemonic Guesser - Educational Demo</title>
+    <!-- Add SheetJS library for Excel export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -40,6 +42,12 @@
         button:disabled {
             background-color: #cccccc;
             cursor: not-allowed;
+        }
+        .export-btn {
+            background-color: #2196F3;
+        }
+        .export-btn:hover {
+            background-color: #0b7dda;
         }
         input {
             padding: 8px;
@@ -123,6 +131,25 @@
             margin-top: 0;
             color: #0066cc;
         }
+        .export-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border-radius: 4px;
+            text-align: center;
+            display: none;
+        }
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
@@ -173,6 +200,13 @@
             
             <h3>Generated Mnemonics (First 20 shown)</h3>
             <div class="mnemonic-list" id="mnemonicList"></div>
+            
+            <div class="export-section" id="exportSection">
+                <h3>Export Options</h3>
+                <button id="exportExcelBtn" class="export-btn">Export to Excel</button>
+                <button id="exportCsvBtn" class="export-btn">Export to CSV</button>
+                <button id="exportJsonBtn" class="export-btn">Export to JSON</button>
+            </div>
         </div>
         
         <div class="explanation">
@@ -188,13 +222,30 @@
         </div>
     </div>
 
+    <div class="notification" id="notification"></div>
+
     <script>
+        // Store the results globally for export
+        let globalResults = [];
+        
+        // Show notification
+        function showNotification(message, duration = 3000) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, duration);
+        }
+
         document.getElementById('startBtn').addEventListener('click', async () => {
             const attempts = document.getElementById('attempts').value;
             const startBtn = document.getElementById('startBtn');
             const resultsDiv = document.getElementById('results');
             const progressContainer = document.getElementById('progressContainer');
             const progressBar = document.getElementById('progressBar');
+            const exportSection = document.getElementById('exportSection');
             
             // Disable button and show progress
             startBtn.disabled = true;
@@ -203,6 +254,7 @@
             progressBar.style.width = '0%';
             progressBar.textContent = '0%';
             resultsDiv.style.display = 'none';
+            exportSection.style.display = 'none';
             
             try {
                 // Simulate progress updates
@@ -217,6 +269,9 @@
                 // Make the API request
                 const response = await fetch(`/api/guess?attempts=${attempts}`);
                 const data = await response.json();
+                
+                // Store results globally for export
+                globalResults = data.results;
                 
                 // Clear progress interval and complete
                 clearInterval(progressInterval);
@@ -245,8 +300,9 @@
                         mnemonicList.appendChild(item);
                     });
                     
-                    // Show results
+                    // Show results and export section
                     resultsDiv.style.display = 'block';
+                    exportSection.style.display = 'block';
                 } else {
                     alert('Error: ' + data.error);
                 }
@@ -257,6 +313,95 @@
                 startBtn.disabled = false;
                 startBtn.textContent = 'Start Guessing';
             }
+        });
+
+        // Export to Excel
+        document.getElementById('exportExcelBtn').addEventListener('click', () => {
+            if (globalResults.length === 0) {
+                alert('No results to export');
+                return;
+            }
+            
+            // Create a workbook
+            const wb = XLSX.utils.book_new();
+            
+            // Convert the results array to a worksheet
+            const wsData = globalResults.map(result => [
+                result.index,
+                result.mnemonic,
+                result.hasFunds ? 'Yes' : 'No'
+            ]);
+            
+            // Add header row
+            wsData.unshift(['#', 'Mnemonic Phrase', 'Has Funds']);
+            
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            
+            // Add the worksheet to the workbook
+            XLSX.utils.book_append_sheet(wb, ws, 'Mnemonics');
+            
+            // Generate the Excel file and trigger download
+            XLSX.writeFile(wb, `mnemonic_guesser_results_${globalResults.length}.xlsx`);
+            
+            showNotification('Excel file exported successfully!');
+        });
+
+        // Export to CSV
+        document.getElementById('exportCsvBtn').addEventListener('click', () => {
+            if (globalResults.length === 0) {
+                alert('No results to export');
+                return;
+            }
+            
+            // Create CSV content
+            let csvContent = '"#","Mnemonic Phrase","Has Funds"\n';
+            globalResults.forEach(result => {
+                csvContent += `"${result.index}","${result.mnemonic}","${result.hasFunds ? 'Yes' : 'No'}"\n`;
+            });
+            
+            // Create a blob and trigger download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `mnemonic_guesser_results_${globalResults.length}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showNotification('CSV file exported successfully!');
+        });
+
+        // Export to JSON
+        document.getElementById('exportJsonBtn').addEventListener('click', () => {
+            if (globalResults.length === 0) {
+                alert('No results to export');
+                return;
+            }
+            
+            // Create JSON content with metadata
+            const jsonData = {
+                metadata: {
+                    totalAttempts: globalResults.length,
+                    generatedAt: new Date().toISOString(),
+                    tool: 'Mnemonic Guesser - Educational Demo'
+                },
+                results: globalResults
+            };
+            
+            // Create a blob and trigger download
+            const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `mnemonic_guesser_results_${globalResults.length}.json`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showNotification('JSON file exported successfully!');
         });
     </script>
 </body>
