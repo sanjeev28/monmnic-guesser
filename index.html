@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mnemonic Guesser - Educational Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        input {
+            padding: 8px;
+            font-size: 16px;
+            width: 100px;
+        }
+        .disclaimer {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            display: none;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #495057;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #6c757d;
+        }
+        .mnemonic-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            background-color: #f8f9fa;
+        }
+        .mnemonic-item {
+            padding: 8px;
+            border-bottom: 1px solid #dee2e6;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .progress-container {
+            width: 100%;
+            background-color: #f1f1f1;
+            border-radius: 4px;
+            margin: 15px 0;
+            display: none;
+        }
+        .progress-bar {
+            height: 20px;
+            background-color: #4CAF50;
+            border-radius: 4px;
+            width: 0%;
+            text-align: center;
+            color: white;
+            line-height: 20px;
+        }
+        .explanation {
+            background-color: #e7f3ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .explanation h3 {
+            margin-top: 0;
+            color: #0066cc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Mnemonic Guesser - Educational Demo</h1>
+        
+        <div class="disclaimer">
+            <strong>⚠️ Educational Purpose Only:</strong> This tool demonstrates why BIP-39 mnemonic phrases are secure against guessing attacks. 
+            It will NOT find any real mnemonic phrases with funds. The probability of success is astronomically low (approximately 1 in 10⁷⁷).
+        </div>
+        
+        <div style="text-align: center; margin: 20px 0;">
+            <label for="attempts">Number of attempts:</label>
+            <input type="number" id="attempts" min="1" max="10000" value="1000">
+            <button id="startBtn">Start Guessing</button>
+        </div>
+        
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar" id="progressBar">0%</div>
+        </div>
+        
+        <div class="results" id="results">
+            <h2>Results</h2>
+            
+            <div class="stats" id="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalAttempts">0</div>
+                    <div class="stat-label">Total Attempts</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="timeElapsed">0s</div>
+                    <div class="stat-label">Time Elapsed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="attemptsPerSecond">0</div>
+                    <div class="stat-label">Attempts/Second</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="foundCount">0</div>
+                    <div class="stat-label">Mnemonics with Funds</div>
+                </div>
+            </div>
+            
+            <div class="stat-card" style="margin: 20px 0;">
+                <div class="stat-value" id="theoreticalTime">0</div>
+                <div class="stat-label">Theoretical Years to Find One (at current rate)</div>
+            </div>
+            
+            <h3>Generated Mnemonics (First 20 shown)</h3>
+            <div class="mnemonic-list" id="mnemonicList"></div>
+        </div>
+        
+        <div class="explanation">
+            <h3>Why This Demonstrates Security</h3>
+            <p>Each BIP-39 mnemonic phrase is derived from 256 bits of entropy, creating 2²⁵⁶ (approximately 10⁷⁷) possible combinations. 
+            Even at high speeds, it would take longer than the age of the universe to check all possibilities.</p>
+            <p>This demonstrates why:</p>
+            <ul>
+                <li>Brute-force attacks against BIP-39 mnemonics are computationally infeasible</li>
+                <li>The security of cryptocurrency wallets comes from mathematical impossibility, not obscurity</li>
+                <li>Real security risks come from poor storage practices, not the cryptography itself</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('startBtn').addEventListener('click', async () => {
+            const attempts = document.getElementById('attempts').value;
+            const startBtn = document.getElementById('startBtn');
+            const resultsDiv = document.getElementById('results');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            
+            // Disable button and show progress
+            startBtn.disabled = true;
+            startBtn.textContent = 'Guessing...';
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+            resultsDiv.style.display = 'none';
+            
+            try {
+                // Simulate progress updates
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += 5;
+                    if (progress > 95) progress = 95;
+                    progressBar.style.width = progress + '%';
+                    progressBar.textContent = progress + '%';
+                }, 100);
+                
+                // Make the API request
+                const response = await fetch(`/api/guess?attempts=${attempts}`);
+                const data = await response.json();
+                
+                // Clear progress interval and complete
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+                progressBar.textContent = '100%';
+                
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                }, 500);
+                
+                if (data.success) {
+                    // Update stats
+                    document.getElementById('totalAttempts').textContent = data.attempts;
+                    document.getElementById('timeElapsed').textContent = data.time + 's';
+                    document.getElementById('attemptsPerSecond').textContent = data.rate;
+                    document.getElementById('foundCount').textContent = data.found;
+                    document.getElementById('theoreticalTime').textContent = data.theoreticalTime;
+                    
+                    // Show first 20 mnemonics
+                    const mnemonicList = document.getElementById('mnemonicList');
+                    mnemonicList.innerHTML = '';
+                    data.results.slice(0, 20).forEach(result => {
+                        const item = document.createElement('div');
+                        item.className = 'mnemonic-item';
+                        item.textContent = `${result.index}. ${result.mnemonic}`;
+                        mnemonicList.appendChild(item);
+                    });
+                    
+                    // Show results
+                    resultsDiv.style.display = 'block';
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                // Re-enable button
+                startBtn.disabled = false;
+                startBtn.textContent = 'Start Guessing';
+            }
+        });
+    </script>
+</body>
+</html>
