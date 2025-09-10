@@ -1,0 +1,15 @@
+{
+  "name": "mnemonic-guesser-web",
+  "version": "1.0.0",
+  "description": "Educational web tool to demonstrate the impracticality of guessing BIP-39 mnemonic phrases",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "bip39": "^3.0.4"
+  },
+  "devDependencies": {
+    "@vercel/node": "^1.12.1"
+  }
+}
