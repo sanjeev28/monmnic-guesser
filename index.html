@@ -139,6 +139,9 @@
             text-align: center;
             display: none;
         }
+        .export-section.visible {
+            display: block;
+        }
         .notification {
             position: fixed;
             bottom: 20px;
@@ -254,7 +257,7 @@
             progressBar.style.width = '0%';
             progressBar.textContent = '0%';
             resultsDiv.style.display = 'none';
-            exportSection.style.display = 'none';
+            exportSection.classList.remove('visible');
             
             try {
                 // Simulate progress updates
@@ -302,7 +305,7 @@
                     
                     // Show results and export section
                     resultsDiv.style.display = 'block';
-                    exportSection.style.display = 'block';
+                    exportSection.classList.add('visible');
                 } else {
                     alert('Error: ' + data.error);
                 }
